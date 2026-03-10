@@ -35,7 +35,8 @@ public class FirebasePushConsumer {
             // Populate MDC for BetterStack filtering
             MDC.put("requestId", "push-" + UUID.randomUUID().toString().substring(0, 8));
             MDC.put("apiTag", "PUSH_WORKER");
-            MDC.put("userEmail", "broadcast"); // Default
+            MDC.put("userEmail", payload.getUserEmail() != null ? payload.getUserEmail() : "broadcast");
+            MDC.put("senderName", payload.getSenderName() != null ? payload.getSenderName() : "SYSTEM");
 
             if (!firebaseEnabled || FirebaseApp.getApps().isEmpty()) {
                 log.warn("[Worker] Firebase is disabled or not initialized. Dropping message.");
@@ -51,8 +52,8 @@ public class FirebasePushConsumer {
                 return;
             }
 
-            log.info("[Worker] Processing Push: Title='{}', Type={}, TargetDevices={}", 
-                    payload.getTitle(), payload.getType(), tokens.size());
+            log.info("[Worker] Processing Push: Title='{}', Type={}, Sender={}, TargetDevices={}", 
+                    payload.getTitle(), payload.getType(), payload.getSenderName(), tokens.size());
 
             try {
                 Notification fcmNotification = Notification.builder()

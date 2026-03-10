@@ -25,4 +25,7 @@ public class PushNotificationMessage implements Serializable {
     private NotificationType type;
     private Long referenceId;
     private String imageUrl;
+
+    private String userEmail;
+    private String senderName;
 }
