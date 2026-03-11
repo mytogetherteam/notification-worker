@@ -26,19 +26,19 @@ public class FirebasePushConsumerTest {
     @InjectMocks
     private FirebasePushConsumer consumer;
 
-    private PushNotificationMessage payload;
+    private org.th.notification.dto.CommonNotificationEvent payload;
 
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(consumer, "firebaseEnabled", true);
         
-        payload = PushNotificationMessage.builder()
+        payload = org.th.notification.dto.CommonNotificationEvent.builder()
                 .title("Test Title")
                 .body("Test Body")
-                .type(NotificationType.ORDER_STATUS)
-                .tokens(List.of("token1"))
-                .userEmail("user@test.com")
+                .notificationType(NotificationType.ORDER_STATUS)
+                .fcmTokens(new java.util.ArrayList<>(List.of("token1")))
                 .senderName("SYSTEM")
+                .targetType(org.th.notification.dto.CommonNotificationEvent.TargetType.USER)
                 .build();
     }
 
@@ -78,7 +78,7 @@ public class FirebasePushConsumerTest {
              MockedStatic<FirebaseMessaging> firebaseMessagingMock = mockStatic(FirebaseMessaging.class)) {
             
             // Arrange
-            payload.setTokens(List.of("token1", "token2"));
+            payload.setFcmTokens(List.of("token1", "token2"));
             firebaseAppMock.when(FirebaseApp::getApps).thenReturn(List.of(mock(FirebaseApp.class)));
             FirebaseMessaging firebaseMessaging = mock(FirebaseMessaging.class);
             firebaseMessagingMock.when(FirebaseMessaging::getInstance).thenReturn(firebaseMessaging);
@@ -99,12 +99,38 @@ public class FirebasePushConsumerTest {
     @Test
     void consumeNotification_ShouldNotProcess_WhenTokensEmpty() {
         // Arrange
-        payload.setTokens(List.of());
+        payload.setFcmTokens(List.of());
 
         // Act
         consumer.consumeNotification(payload);
 
         // Assert
-        // Logic should log warn and return before calling Firebase
+        // Logic should log info and return before calling Firebase
+    }
+
+    @Test
+    void consumeLegacyNotification_ShouldForwardToNewFlow() throws com.google.firebase.messaging.FirebaseMessagingException {
+        try (MockedStatic<FirebaseApp> firebaseAppMock = mockStatic(FirebaseApp.class);
+             MockedStatic<FirebaseMessaging> firebaseMessagingMock = mockStatic(FirebaseMessaging.class)) {
+            
+            // Arrange
+            firebaseAppMock.when(FirebaseApp::getApps).thenReturn(List.of(mock(FirebaseApp.class)));
+            FirebaseMessaging firebaseMessaging = mock(FirebaseMessaging.class);
+            firebaseMessagingMock.when(FirebaseMessaging::getInstance).thenReturn(firebaseMessaging);
+            when(firebaseMessaging.send(any(Message.class))).thenReturn("legacy-response-id");
+
+            PushNotificationMessage legacyPayload = PushNotificationMessage.builder()
+                    .title("Legacy Title")
+                    .body("Legacy Body")
+                    .tokens(List.of("legacy-token"))
+                    .type(NotificationType.ORDER_STATUS)
+                    .build();
+
+            // Act
+            consumer.consumeLegacyNotification(legacyPayload);
+
+            // Assert
+            verify(firebaseMessaging).send(any(Message.class));
+        }
     }
 }
