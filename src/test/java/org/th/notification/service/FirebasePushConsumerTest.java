@@ -133,4 +133,37 @@ public class FirebasePushConsumerTest {
             verify(firebaseMessaging).send(any(Message.class));
         }
     }
+
+    @Test
+    void consumeLegacyNotification_ShouldHandleAliasedFields() throws Exception {
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        String json = """
+                {
+                    "title": "Alias Title",
+                    "fcmTokens": ["alias-token"],
+                    "notificationType": "ORDER_STATUS"
+                }
+                """;
+        
+        try (MockedStatic<FirebaseApp> firebaseAppMock = mockStatic(FirebaseApp.class);
+             MockedStatic<FirebaseMessaging> firebaseMessagingMock = mockStatic(FirebaseMessaging.class)) {
+            
+            // Arrange
+            firebaseAppMock.when(FirebaseApp::getApps).thenReturn(List.of(mock(FirebaseApp.class)));
+            FirebaseMessaging firebaseMessaging = mock(FirebaseMessaging.class);
+            firebaseMessagingMock.when(FirebaseMessaging::getInstance).thenReturn(firebaseMessaging);
+            when(firebaseMessaging.send(any(Message.class))).thenReturn("alias-response-id");
+
+            PushNotificationMessage legacyPayload = mapper.readValue(json, PushNotificationMessage.class);
+
+            // Act
+            consumer.consumeLegacyNotification(legacyPayload);
+
+            // Assert
+            verify(firebaseMessaging).send(any(Message.class));
+            // Verify fields were correctly aliased
+            org.assertj.core.api.Assertions.assertThat(legacyPayload.getTokens()).contains("alias-token");
+            org.assertj.core.api.Assertions.assertThat(legacyPayload.getType()).isEqualTo(NotificationType.ORDER_STATUS);
+        }
+    }
 }
