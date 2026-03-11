@@ -16,8 +16,8 @@
         <appName>MyTogether-Notification-Worker</appName>
         <sourceToken>${LOGTAIL_SOURCE_TOKEN}</sourceToken>
         <ingestUrl>https://s2288964.eu-fsn-3.betterstackdata.com</ingestUrl>
-        <mdcFields>requestId,userId,deviceId,clientIp,serverId,apiTag,user,username,userEmail,senderName,panel</mdcFields>
-        <mdcTypes>string,string,string,string,string,string,string,string,string,string,string</mdcTypes>
+        <mdcFields>requestId,userId,deviceId,clientIp,serverId,apiTag,user,username,userEmail,senderName,panel,targetType</mdcFields>
+        <mdcTypes>string,string,string,string,string,string,string,string,string,string,string,string</mdcTypes>
     </appender>
 
     <!-- Async Logtail Appender to prevent blocking on I/O -->
@@ -30,6 +30,7 @@
     <!-- Default local logging -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_LOGTAIL"/>
     </root>
 
     <!-- Suppress noisy loggers -->
